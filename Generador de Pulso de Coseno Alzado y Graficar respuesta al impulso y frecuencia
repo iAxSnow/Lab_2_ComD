@@ -1,0 +1,39 @@
+% Parámetros generales
+f0 = 1e3;             % Frecuencia base (Hz)
+B = 2*f0;             % Ancho de banda máximo (cuando alpha=1)
+fs = 10*B;            % Frecuencia de muestreo (Hz)
+Ts = 1/fs;            % Periodo de muestreo (s)
+t = 0:Ts:5/f0;        % Tiempo (solo t >= 0 como pide la pauta)
+
+% Vector de factores de roll-off
+alphas = [0, 0.25, 0.75, 1];
+
+% Graficar respuesta al impulso para cada alpha
+for i = 1:length(alphas)
+    alpha = alphas(i);
+    f_delta = alpha * f0;
+    
+    % Generar pulso de coseno alzado en el dominio del tiempo
+    h = 2*f0 * (sin(2*pi*f0*t)./(2*pi*f0*t)) .* (cos(2*pi*f_delta*t)./(1 - (4*f_delta*t).^2));
+    h(isnan(h)) = 2*f0; % Corregir NaN en t=0
+
+    figure;
+    plot(t, h, 'LineWidth', 1.5);
+    title(['Respuesta al impulso, \alpha = ', num2str(alpha)]);
+    xlabel('Tiempo (s)');
+    ylabel('Amplitud');
+    grid on;
+    
+    % Graficar respuesta en frecuencia
+    NFFT = 1024;
+    Hf = fftshift(fft(h, NFFT));
+    f = linspace(-fs/2, fs/2, NFFT);
+    
+    figure;
+    plot(f, abs(Hf)/max(abs(Hf)), 'LineWidth', 1.5);
+    title(['Respuesta en frecuencia, \alpha = ', num2str(alpha)]);
+    xlabel('Frecuencia (Hz)');
+    ylabel('Magnitud normalizada');
+    xlim([-2*B 2*B]);
+    grid on;
+end
