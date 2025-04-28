@@ -1,0 +1,29 @@
+% Reducción de frecuencia de muestreo
+fs_reducido = 0.8*fs;
+samplesPerBit_reducido = fs_reducido/Rb;
+t_bit_reducido = (0:samplesPerBit_reducido-1)/fs_reducido;
+
+% Generar pulso para reducción
+alpha = 0.25; % Puedes usar cualquier alpha
+f_delta = alpha * f0;
+h_reducido = 2*f0 * (sin(2*pi*f0*t_bit_reducido)./(2*pi*f0*t_bit_reducido)) .* ...
+             (cos(2*pi*f_delta*t_bit_reducido)./(1 - (4*f_delta*t_bit_reducido).^2));
+h_reducido(isnan(h_reducido)) = 2*f0;
+
+% Generar tren de bits como antes
+señal_reducida = zeros(1, length(bits)*samplesPerBit_reducido);
+for k = 1:length(bits)
+    if bits(k) == 1
+        señal_reducida((k-1)*samplesPerBit_reducido + (1:samplesPerBit_reducido)) = 1;
+    else
+        señal_reducida((k-1)*samplesPerBit_reducido + (1:samplesPerBit_reducido)) = -1;
+    end
+end
+
+% Filtrar y agregar ruido
+tx_reducido = conv(señal_reducida, h_reducido, 'same');
+tx_reducido_noisy = awgn(tx_reducido, 30, 'measured');
+
+% Generar diagrama de ojo con reducción de muestreo
+eyediagram(tx_reducido_noisy, 2*samplesPerBit_reducido);
+title('Diagrama de Ojo con fs reducido (0.8fs)');
