@@ -1,0 +1,39 @@
+% Parámetros generales
+numBits = 1e4;           % 104 bits
+bits = randi([0 1], 1, numBits); % Generar bits aleatorios
+
+Rb = f0;                 % Tasa de bits (bit rate)
+fs = 10*Rb;              % Frecuencia de muestreo
+samplesPerBit = fs/Rb;   % Muestras por bit
+t_bit = (0:samplesPerBit-1)/fs;
+
+alphas = [0, 0.25, 0.75, 1];
+
+for i = 1:length(alphas)
+    alpha = alphas(i);
+    f_delta = alpha * f0;
+
+    % Pulso de coseno alzado (solo para 1 bit)
+    h = 2*f0 * (sin(2*pi*f0*t_bit)./(2*pi*f0*t_bit)) .* (cos(2*pi*f_delta*t_bit)./(1 - (4*f_delta*t_bit).^2));
+    h(isnan(h)) = 2*f0; % Corregir NaN en t=0
+
+    % Generar tren de pulsos para los bits
+    señal = zeros(1, length(bits)*samplesPerBit);
+    for k = 1:length(bits)
+        if bits(k) == 1
+            señal((k-1)*samplesPerBit + (1:samplesPerBit)) = 1;
+        else
+            señal((k-1)*samplesPerBit + (1:samplesPerBit)) = -1;
+        end
+    end
+    
+    % Filtrar la señal con el pulso de coseno alzado
+    tx = conv(señal, h, 'same');
+    
+    % Agregar ruido AWGN
+    tx_noisy = awgn(tx, 30, 'measured');
+    
+    % Generar diagrama de ojo
+    eyediagram(tx_noisy, 2*samplesPerBit); % 2 bits por trama de ojo
+    title(['Diagrama de Ojo, \alpha = ', num2str(alpha)]);
+end
